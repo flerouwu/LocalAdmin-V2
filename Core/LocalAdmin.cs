@@ -471,6 +471,8 @@ public sealed class LocalAdmin : IDisposable
                                     ConsoleColor.Red);
                                 Environment.Exit(1);
                             }
+
+                            capture = CaptureArgs.None;
                             break;
 
                         default:
