@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using LocalAdmin.V2.Commands.PluginManager;
@@ -46,7 +47,7 @@ public sealed class LocalAdmin : IDisposable
     private static int _restarts = -1, _restartsLimit = 4, _restartsTimeWindow = 480; //480 seconds = 8 minutes
 
     internal readonly CommandService CommandService = new();
-    private readonly string _scpslExecutable;
+    private string _scpslExecutable;
     private volatile bool _processClosing;
     private bool _idleMode;
     private uint _heartbeatSpanMaxThreshold;
@@ -95,7 +96,8 @@ public sealed class LocalAdmin : IDisposable
         RestartsLimit,
         RestartsTimeWindow,
         LogLengthLimit,
-        LogEntriesLimit
+        LogEntriesLimit,
+        ExecutableName
     }
 
     internal enum HeartbeatStatus : byte
@@ -378,6 +380,10 @@ public sealed class LocalAdmin : IDisposable
                                         _noTerminalTitle = true;
                                         break;
 
+                                    case "--executable":
+                                        capture = CaptureArgs.ExecutableName;
+                                        break;
+
                                     case "--":
                                         capture = CaptureArgs.ArgsPassthrough;
                                         break;
@@ -455,6 +461,16 @@ public sealed class LocalAdmin : IDisposable
 
                             capture = CaptureArgs.None;
                         }
+                            break;
+
+                        case CaptureArgs.ExecutableName:
+                            _scpslExecutable = arg;
+                            var path = Path.Combine(Environment.CurrentDirectory, _scpslExecutable);
+                            if (!File.Exists(path)) {
+                                ConsoleUtil.WriteLine($"executable {_scpslExecutable} does not exist!",
+                                    ConsoleColor.Red);
+                                Environment.Exit(1);
+                            }
                             break;
 
                         default:
